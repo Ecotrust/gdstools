@@ -16,7 +16,7 @@ from gdstools.utils import print_message
 
 
 class GEEImageLoader:
-    """Class to hold additional methods and parameters to fetch Google Earth Engine (GEE) images.
+    """Class to hold custom methods and parameters to fetch Google Earth Engine (GEE) images.
 
     Parameters
     ----------
@@ -27,6 +27,9 @@ class GEEImageLoader:
 
         self.image = image
         self.metadata = image.getInfo()
+        
+        assert self.metadata.get("bands"), "Image has no bands."
+
         self.pbar = progressbar
 
         if self.metadata.get("id"):
@@ -114,8 +117,8 @@ class GEEImageLoader:
         ----------
         params : dict or None (default None)
             Parameters to pass to the GEE API. If None, will use the default parameters. Options include:
-            name, scale, crs, crs_transform, region, format, dimensions, filePerBand and others. See more
-            information see https://developers.google.com/earth-engine/apidocs/ee-image-getdownloadurl
+            name, scale, crs, crs_transform, region, format, dimensions, filePerBand and others. See 
+            https://developers.google.com/earth-engine/apidocs/ee-image-getdownloadurl
         viz_params : dict or None (default None)
             Parameters to pass to ee.Image.visualize. Required if preview = True. For more information see
             https://developers.google.com/earth-engine/apidocs/ee-image-visualize
@@ -227,8 +230,10 @@ class GEEImageLoader:
                 return _list[index]
             except (IndexError, TypeError):
                 return None
+            
+        daterange = collection.reduceColumns(ee.Reducer.minMax(), ['system:time_start']).getInfo()
 
-        collection_info = collection.sort("system:time_start", False).getInfo()
+        collection_info = collection.limit(10).getInfo()
 
         if collection_info.get("properties"):
             properties = collection_info.get("properties")
@@ -246,18 +251,7 @@ class GEEImageLoader:
             properties_end.get("description"),
         )
 
-        date_start, date_end = [
-            coalesce(
-                get_item(properties.get("date_range"), 0),
-                properties.get("system:time_start"),
-            ),
-            coalesce(
-                get_item(properties.get("date_range"), 1),
-                properties.get("system:time_end"),
-                properties_end.get("system:time_end"),
-                properties_end.get("system:time_start"),
-            ),
-        ]
+        date_start, date_end = daterange.get("min"), daterange.get("max")
 
         self.type = coalesce(
             collection_info.get("type"), collection_info.get("type_name")
