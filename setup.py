@@ -12,6 +12,7 @@ setup(
         'geetools',
         'rasterio',
         'pandas',
-        'seaborn'
+        'seaborn',
+        'rio-cogeo'
     ]
 )
