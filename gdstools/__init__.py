@@ -8,6 +8,7 @@ from gdstools.utils import (
     create_directory_tree,
     print_message,
     degrees_to_meters,
+    infer_utm
 )
 
 from gdstools.imgutils import (
