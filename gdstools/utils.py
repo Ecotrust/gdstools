@@ -1,11 +1,11 @@
 # %%
 import os
+from pathlib import Path
 import sys
 import contextlib
 import configparser
 import yaml
 import re
-from dotenv import dotenv_values
 
 import numpy as np
 
@@ -47,6 +47,7 @@ class ConfigLoader:
         self.config_file = config_file
 
     def load_from_env(self):
+        from dotenv import dotenv_values
         env = dotenv_values(os.path.join(self.root, ".env"))
         for key in env:
             self.config[key] = env[key]
@@ -131,9 +132,35 @@ def degrees_to_meters(deg, angle="lon"):
     elif angle == "lat":
         return R * rad
 
+# See also this utm package https://github.com/Turbo87/utm 
+def infer_utm(bbox):
+    """
+    Infer the UTM Coordinate Reference System (CRS) by determining the UTM zone where a given lat/long bounding box is located.
+    Modified from: https://stackoverflow.com/a/40140326/1913361
+
+    :param bbox: A list-like object containing the bounding box coordinates (minx, miny, maxx, maxy).
+    :type bbox: list-like
+    :param zone_number: An optional integer specifying the UTM zone number. If not provided, the UTM zone will be inferred based on the bounding box coordinates.
+    :type zone_number: int
+    :return: pyproj.CRS object representing the UTM CRS.
+    :rtype: pyproj.CRS
+    """
+    from pyproj import CRS
+
+    xmin, _, xmax, _ = bbox
+    midpoint = xmin + (xmax - xmin) / 2
+
+    epsg_list = []
+    for zone in range(1, 61):
+        if (midpoint > -180 + (zone - 1) * 6) & (midpoint <= -180 + zone * 6):
+            epsg = 32600 + zone
+            epsg_list.append(CRS.from_epsg(epsg))
+
+    return epsg_list.pop(0)
+
 
 def split_bbox(dim, bbox_to_split):
-    """Split a bounding box into n = dim x dim bounding boxes.
+    """Split a bounding box into dim x dim bounding boxes.
 
     Parameters
     ----------
@@ -186,9 +213,6 @@ def create_directory_tree(*args):
     -------
         PosixPath object
     """
-    from pathlib import Path
-    import os
-
     filepath = Path(*args)
 
     if not filepath.exists():
