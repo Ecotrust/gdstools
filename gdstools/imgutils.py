@@ -18,6 +18,12 @@ def image_collection(path, file_pattern='*.tif'):
     return glob.glob(f'{path}/**/{file_pattern}', recursive=True)
 
 
+def center_crop_array(new_size, array):
+    xpad, ypad = (np.subtract(array.shape, new_size)/2).astype(int)
+    dx, dy = np.subtract(new_size, array[xpad:-xpad, ypad:-ypad].shape)
+    return array[xpad:-xpad+dx, ypad:-ypad+dy]
+
+
 class Denormalize:
     def __init__(self, mean, std):
         self.mean = mean
@@ -91,19 +97,3 @@ def save_cog(
         print(f"File {path} already exists")
 
     return
-
-# %%
-# TODO: Move code below to standalone script
-# TODO: implement tests
-# if __name__ == "__main__":
-    # %%
-    # collection_name = '3dep'
-    # year = None
-
-    # repo = Path(os.path.expanduser('~/mapping_forest_types/data/prod/train'))
-    # collection_path = repo / f'{collection_name}'
-    # if year:
-    #     collection_path = collection_path / str(year)
-    # collection = image_collection(collection_path)
-
-    # stats = get_collection_stats(collection, BANDS[collection_name])
